@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-test-app
+  namespace: k8s-test-app
+  labels:
+    app: k8s-test-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: k8s-test-app
+  template:
+    metadata:
+      labels:
+        app: k8s-test-app
+    spec:
+      containers:
+      - name: k8s-test-app
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/k8s-test-app:latest
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: PORT
+          value: "5000"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
