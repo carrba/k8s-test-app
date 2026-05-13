@@ -15,6 +15,16 @@ CODEBUILD_PROJECT_NAME="k8s-test-app-build"
 echo "🚀 Deploying k8s-test-app to EKS"
 echo "=================================="
 
+# Ensure profile-based auth is used for CodeCommit over HTTPS.
+git config credential.helper "!aws --profile $AWS_PROFILE codecommit credential-helper \$@"
+git config credential.UseHttpPath true
+
+# Ensure SSO session is active for the selected profile.
+if ! aws sts get-caller-identity --profile $AWS_PROFILE >/dev/null 2>&1; then
+    echo "🔐 AWS SSO session not found for profile '$AWS_PROFILE'. Starting login..."
+    aws sso login --profile $AWS_PROFILE
+fi
+
 # Step 1: Push source code to CodeCommit
 echo "📤 Pushing source code to CodeCommit..."
 CODECOMMIT_URL=$(aws codecommit get-repository \
@@ -40,6 +50,19 @@ aws ecr create-repository \
     --profile $AWS_PROFILE 2>/dev/null || echo "   ECR repository already exists, skipping."
 
 # Step 3: Trigger CodeBuild
+PROJECT_EXISTS=$(aws codebuild batch-get-projects \
+    --names "$CODEBUILD_PROJECT_NAME" \
+    --region $AWS_REGION \
+    --profile $AWS_PROFILE \
+    --query "length(projects)" \
+    --output text)
+
+if [ "$PROJECT_EXISTS" = "0" ]; then
+    echo "⚠️  CodeBuild project '$CODEBUILD_PROJECT_NAME' not found."
+    echo "   Running setup-aws-pipeline.sh to create required AWS resources..."
+    bash ./setup-aws-pipeline.sh
+fi
+
 echo "🔨 Triggering CodeBuild to build and push Docker image..."
 BUILD_ID=$(aws codebuild start-build \
     --project-name $CODEBUILD_PROJECT_NAME \
