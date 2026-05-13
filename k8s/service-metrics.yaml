@@ -5,6 +5,7 @@ metadata:
   namespace: k8s-test-app
   labels:
     app: k8s-test-app
+    metrics: enabled
 spec:
   selector:
     app: k8s-test-app

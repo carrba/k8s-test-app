@@ -5,10 +5,15 @@ metadata:
   namespace: k8s-test-app
   labels:
     app: k8s-test-app
+    release: monitoring
 spec:
+  namespaceSelector:
+    matchNames:
+    - k8s-test-app
   selector:
     matchLabels:
       app: k8s-test-app
+      metrics: enabled
   endpoints:
   - port: metrics
     path: /metrics

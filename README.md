@@ -64,6 +64,13 @@ docker-compose down
 - `GET /` - Main endpoint, returns app status
 - `GET /health` - Health check endpoint
 - `GET /api/test` - Test endpoint with sample data
+- `GET /metrics` - Prometheus metrics endpoint
+
+## Monitoring
+
+- Prometheus metrics are exposed on `GET /metrics`.
+- Kubernetes metrics scraping resources are in `k8s/service-metrics.yaml` and `k8s/servicemonitor.yaml`.
+- See `PROMETHEUS.md` for setup and troubleshooting details.
 
 ## Environment Variables
 

@@ -24,7 +24,7 @@ curl http://localhost:5000/metrics
 
 Port-forward to the service:
 ```bash
-kubectl port-forward -n k8s-test-app svc/k8s-test-app 5000:5000
+kubectl port-forward -n k8s-test-app svc/k8s-test-app-metrics 5000:5000
 curl http://localhost:5000/metrics
 ```
 
@@ -66,6 +66,26 @@ kubectl apply -f k8s/servicemonitor.yaml
 ```
 
 The ServiceMonitor will automatically configure Prometheus to scrape metrics every 30 seconds.
+
+### Label Selector Requirements
+
+This repository config uses:
+
+- `serviceMonitorSelector.matchLabels.release: monitoring` in Prometheus
+- `metadata.labels.release: monitoring` in `k8s/servicemonitor.yaml`
+- `spec.selector.matchLabels.metrics: enabled` in `k8s/servicemonitor.yaml`
+- `metadata.labels.metrics: enabled` in `k8s/service-metrics.yaml`
+
+If any of those labels are missing or changed, Prometheus may not discover the target.
+
+### Quick Troubleshooting
+
+```bash
+kubectl -n k8s-test-app get servicemonitor k8s-test-app -o yaml
+kubectl -n k8s-test-app get svc -l app=k8s-test-app,metrics=enabled
+kubectl -n k8s-test-app port-forward svc/k8s-test-app-metrics 5000:5000
+curl -i http://localhost:5000/metrics
+```
 
 ## Example Queries
 

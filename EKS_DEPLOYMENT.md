@@ -56,6 +56,8 @@ aws eks update-kubeconfig --name <YOUR_EKS_CLUSTER_NAME> --region <YOUR_AWS_REGI
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/service-metrics.yaml
+kubectl apply -f k8s/servicemonitor.yaml
 ```
 
 #### 7. Verify Deployment
@@ -90,6 +92,18 @@ kubectl get svc k8s-test-app -n k8s-test-app -o jsonpath='{.status.loadBalancer.
 Then access your app at: `http://<EXTERNAL-IP>`
 
 ## Monitoring and Troubleshooting
+
+### Verify Prometheus resources
+```bash
+kubectl get servicemonitor -n k8s-test-app
+kubectl get svc -n k8s-test-app -l app=k8s-test-app,metrics=enabled
+```
+
+### Verify metrics endpoint from cluster
+```bash
+kubectl port-forward -n k8s-test-app svc/k8s-test-app-metrics 5000:5000
+curl -i http://localhost:5000/metrics
+```
 
 ### View deployment status
 ```bash
