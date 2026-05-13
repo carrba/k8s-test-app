@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: k8s-test-app
-        image: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/k8s-test-app:latest
+        image: 783050088916.dkr.ecr.eu-west-2.amazonaws.com/k8s-test-app:latest
         ports:
         - containerPort: 5000
           name: http
