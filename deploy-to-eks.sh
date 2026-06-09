@@ -101,25 +101,45 @@ done
 echo "🔗 Connecting to EKS cluster..."
 aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION --profile $AWS_PROFILE
 
-# Step 6: Create namespace
+# Step 6: Install or upgrade nginx ingress controller (NLB)
+echo "🌐 Installing/upgrading nginx ingress controller..."
+if ! command -v helm >/dev/null 2>&1; then
+    echo "❌ Helm is required but not installed. Install Helm and re-run this script."
+    exit 1
+fi
+
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx 2>/dev/null || true
+helm repo update
+helm upgrade --install nginx-ingress ingress-nginx/ingress-nginx \
+    --namespace ingress-nginx \
+    --create-namespace \
+    --set controller.ingressClassResource.name=nginx \
+    --set controller.ingressClass=nginx \
+    --set controller.service.type=LoadBalancer \
+    --set-string controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"=nlb \
+    --set-string controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-scheme"=internet-facing
+
+# Step 7: Create namespace
 echo "🔧 Creating namespace..."
 kubectl apply -f k8s/namespace.yaml
 
-# Step 7: Deploy to EKS
+# Step 8: Deploy to EKS
 echo "🚀 Deploying to EKS..."
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
 
-# Step 8: Wait for deployment
+# Step 9: Wait for deployment
 echo "⏳ Waiting for deployment to be ready..."
 kubectl rollout status deployment/k8s-test-app -n k8s-test-app --timeout=5m
 
-# Step 9: Get LoadBalancer URL
+# Step 10: Get Ingress URL
 echo ""
 echo "✅ Deployment complete!"
 echo ""
 echo "🔍 Getting service details..."
 kubectl get svc k8s-test-app -n k8s-test-app
+kubectl get ingress k8s-test-app -n k8s-test-app
 
 echo ""
 echo "📌 To view deployment status:"
@@ -133,3 +153,6 @@ echo "   kubectl logs -n k8s-test-app deployment/k8s-test-app -f"
 echo ""
 echo "📌 To view service details:"
 echo "   kubectl get svc k8s-test-app -n k8s-test-app"
+echo ""
+echo "📌 To view ingress details:"
+echo "   kubectl get ingress k8s-test-app -n k8s-test-app"

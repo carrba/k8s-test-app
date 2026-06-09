@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 from prometheus_client import Counter, Histogram, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
 import os
+import random
 import time
 
 app = Flask(__name__)
@@ -65,6 +66,30 @@ def test():
 @app.route('/metrics')
 def metrics():
     return generate_latest(registry), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+
+@app.route('/colour/default.html')
+def colour_default():
+        colours = [
+                'red',
+                'blue',
+                'green',
+                'orange',
+                'teal',
+                'magenta',
+                'goldenrod'
+        ]
+        selected_colour = random.choice(colours)
+        return f"""<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>Hello Colour</title>
+</head>
+<body style=\"display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:sans-serif;background:#f8f9fb;\">
+    <h1 style=\"font-size:4rem;color:{selected_colour};\">Hello</h1>
+</body>
+</html>"""
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))

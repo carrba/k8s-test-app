@@ -51,16 +51,31 @@ docker push <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/k8s-test-app:lat
 aws eks update-kubeconfig --name <YOUR_EKS_CLUSTER_NAME> --region <YOUR_AWS_REGION>
 ```
 
-#### 6. Deploy to EKS
+#### 6. Install or upgrade nginx ingress controller (NLB)
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+helm upgrade --install nginx-ingress ingress-nginx/ingress-nginx \
+   --namespace ingress-nginx \
+   --create-namespace \
+   --set controller.ingressClassResource.name=nginx \
+   --set controller.ingressClass=nginx \
+   --set controller.service.type=LoadBalancer \
+   --set-string controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"=nlb \
+   --set-string controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-scheme"=internet-facing
+```
+
+#### 7. Deploy to EKS
 ```bash
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
 kubectl apply -f k8s/service-metrics.yaml
 kubectl apply -f k8s/servicemonitor.yaml
 ```
 
-#### 7. Verify Deployment
+#### 8. Verify Deployment
 ```bash
 kubectl get pods -n k8s-test-app
 kubectl get svc -n k8s-test-app
@@ -70,7 +85,8 @@ kubectl get svc -n k8s-test-app
 
 - **namespace.yaml** - Creates isolated namespace for the app
 - **deployment.yaml** - Defines 2 replicas with health checks and resource limits
-- **service.yaml** - Exposes app via LoadBalancer (AWS ELB)
+- **service.yaml** - Exposes app internally as a ClusterIP service
+- **ingress.yaml** - Exposes app externally through the nginx ingress controller
 
 ## Health Checks
 
@@ -83,13 +99,15 @@ The deployment includes:
 - **Requests**: 100m CPU, 128Mi Memory
 - **Limits**: 500m CPU, 512Mi Memory
 
-## Getting Service URL
+## Getting Ingress URL
 
 ```bash
-kubectl get svc k8s-test-app -n k8s-test-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+kubectl get ingress k8s-test-app -n k8s-test-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
-Then access your app at: `http://<EXTERNAL-IP>`
+Then access your app at: `http://<NLB-HOSTNAME>`
+
+Note: this ingress expects an nginx ingress controller installed with a LoadBalancer service. The command above configures that service as an AWS NLB.
 
 ## Monitoring and Troubleshooting
 
