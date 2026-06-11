@@ -18,6 +18,7 @@ spec:
       containers:
       - name: k8s-test-app
         image: 783050088916.dkr.ecr.eu-west-2.amazonaws.com/k8s-test-app:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 5000
           name: http

@@ -99,6 +99,9 @@ def colour_default():
 @app.route('/worldcup')
 def worldcup():
     csv_path = get_worldcup_csv_path()
+    if not os.path.exists(csv_path):
+        return jsonify({'error': f'File not found: {csv_path}'}), 500
+
     matches = []
 
     with open(csv_path, newline='', encoding='utf-8', errors='replace') as csv_file:
@@ -347,6 +350,9 @@ def save_worldcup_scores():
         return jsonify({'error': 'Invalid payload: updates must be a list'}), 400
 
     csv_path = get_worldcup_csv_path()
+    if not os.path.exists(csv_path):
+        return jsonify({'error': f'File not found: {csv_path}'}), 500
+
     with open(csv_path, newline='', encoding='utf-8', errors='replace') as csv_file:
         rows = list(csv.reader(csv_file))
 
