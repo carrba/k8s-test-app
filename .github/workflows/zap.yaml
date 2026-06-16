@@ -5,6 +5,7 @@ on:
 jobs:
   zap:
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Checkout
