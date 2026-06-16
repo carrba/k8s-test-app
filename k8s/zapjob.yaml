@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zap-scan
+  namespace: k8s-test-app
+spec:
+  template:
+    spec:
+      containers:
+        - name: zap
+          image: ghcr.io/zaproxy/zaproxy:stable
+          command:
+            - zap-baseline.py
+          args:
+            - "-t"
+            - "http://k8s-test-app.k8s-test-app.svc.cluster.local"
+            - "-r"
+            - "report.html"
+      restartPolicy: Never
