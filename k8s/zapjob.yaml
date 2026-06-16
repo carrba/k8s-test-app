@@ -9,6 +9,9 @@ spec:
       containers:
         - name: zap
           image: ghcr.io/zaproxy/zaproxy:stable
+          volumeMounts:
+            - name: zap-work
+              mountPath: /zap/wrk
           command:
             - zap-baseline.py
           args:
@@ -16,4 +19,7 @@ spec:
             - "http://k8s-test-app.k8s-test-app.svc.cluster.local"
             - "-r"
             - "report.html"
+      volumes:
+        - name: zap-work
+          emptyDir: {}
       restartPolicy: Never
