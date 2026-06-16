@@ -4,6 +4,7 @@ metadata:
   name: zap-scan
   namespace: k8s-test-app
 spec:
+  backoffLimit: 0
   template:
     spec:
       containers:
@@ -17,6 +18,7 @@ spec:
           args:
             - "-t"
             - "http://k8s-test-app.k8s-test-app.svc.cluster.local"
+            - "-I"
             - "-r"
             - "report.html"
       volumes:
