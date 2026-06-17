@@ -29,17 +29,39 @@ jobs:
           kubectl delete job zap-scan -n k8s-test-app --ignore-not-found
           kubectl apply -f k8s/zapjob.yaml
 
+      - name: Copy ZAP report from pod
+        run: |
+          until pod=$(kubectl get pods -n ${{ secrets.KUBE_NAMESPACE }} -l job-name=zap-scan -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | head -n1) && [ -n "$pod" ]; do
+            echo "Waiting for zap-scan pod..."
+            sleep 2
+          done
+          echo "Found pod: $pod"
+          until [ "$(kubectl get pod -n ${{ secrets.KUBE_NAMESPACE }} "$pod" -o jsonpath='{.status.phase}')" = "Running" ]; do
+            echo "Waiting for pod to be Running..."
+            sleep 2
+          done
+          echo "Pod is Running, copying report..."
+          kubectl cp "${{ secrets.KUBE_NAMESPACE }}/$pod:/zap/wrk/report.html" ./report.html
+
       - name: Wait for job completion
         run: |
           kubectl wait \
             --for=condition=complete \
             job/zap-scan \
-            -n k8s-test-app \
+            -n ${{ secrets.KUBE_NAMESPACE }} \
             --timeout=900s
 
       - name: Get logs (debugging)
         run: |
-          kubectl logs job/zap-scan -n k8s-test-app | tee zap-output.txt
+          kubectl logs job/zap-scan -n ${{ secrets.KUBE_NAMESPACE }} | tee zap-output.txt
+
+      - name: Upload ZAP scan report artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: zap-scan-report
+          path: |
+            report.html
+            zap-output.txt
 
       - name: Parse ZAP alerts
         id: parse_alerts
@@ -68,11 +90,3 @@ jobs:
             tail -n 120 zap-output.txt
             echo '```'
           } > zap-issue.md
-
-      - name: Create GitHub issue for alerts
-        if: ${{ steps.parse_alerts.outputs.fail_count != '0' || steps.parse_alerts.outputs.warn_count != '0' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TITLE="ZAP alerts detected: FAIL=${{ steps.parse_alerts.outputs.fail_count }}, WARN=${{ steps.parse_alerts.outputs.warn_count }}"
-          gh issue create --title "$TITLE" --body-file zap-issue.md
