@@ -30,7 +30,7 @@ jobs:
           kubectl delete job zap-scan -n k8s-test-app --ignore-not-found
           kubectl apply -f k8s/zapjob.yaml
 
-      - name: Copy ZAP report from pod
+      - name: Copy ZAP markdown report from pod
         run: |
           until pod=$(kubectl get pods -n ${{ secrets.KUBE_NAMESPACE }} -l job-name=zap-scan -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | head -n1) && [ -n "$pod" ]; do
             echo "Waiting for zap-scan pod..."
@@ -41,13 +41,19 @@ jobs:
             echo "Waiting for pod to be Running..."
             sleep 2
           done
-          echo "Pod is Running, waiting for report to be written..."
-          until kubectl exec -n ${{ secrets.KUBE_NAMESPACE }} "$pod" -- test -s /zap/wrk/report.html; do
-            echo "report.html not ready yet..."
+          echo "Pod is Running, waiting for report.md to be written..."
+          until kubectl exec -n ${{ secrets.KUBE_NAMESPACE }} "$pod" -- test -s /zap/wrk/report.md; do
+            echo "report.md not ready yet..."
             sleep 2
           done
-          kubectl cp "${{ secrets.KUBE_NAMESPACE }}/$pod:/zap/wrk/report.html" ./report.html
-          test -s ./report.html
+          kubectl cp "${{ secrets.KUBE_NAMESPACE }}/$pod:/zap/wrk/report.md" ./report.md
+          test -s ./report.md
+
+      - name: Print report.md to stdout
+        run: |
+          echo "===== BEGIN ZAP report.md ====="
+          cat report.md
+          echo "===== END ZAP report.md ====="
 
       - name: Wait for job completion
         run: |
@@ -66,7 +72,7 @@ jobs:
         with:
           name: zap-scan-report
           path: |
-            report.html
+            report.md
             zap-output.txt
 
       - name: Parse ZAP alerts
