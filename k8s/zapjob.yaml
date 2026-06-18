@@ -14,8 +14,8 @@ spec:
           volumeMounts:
             - name: zap-work
               mountPath: /zap/wrk
-            - name: tmp
-              mountPath: /tmp
+            - name: home
+              mountPath: /home
           securityContext:
             runAsUser: 1000
             runAsNonRoot: true
@@ -35,6 +35,6 @@ spec:
       volumes:
         - name: zap-work
           emptyDir: {}
-        - name: tmp
+        - name: home
           emptyDir: {}
       restartPolicy: Never
