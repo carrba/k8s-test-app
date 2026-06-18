@@ -14,7 +14,7 @@ spec:
           volumeMounts:
             - name: zap-work
               mountPath: /zap/wrk
-          securityContect:
+          securityContext:
             runAsUser: 1000
             runAsNonRoot: true
             allowPrivilegeEscalation: false
