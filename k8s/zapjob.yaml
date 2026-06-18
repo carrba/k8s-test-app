@@ -20,7 +20,7 @@ spec:
           args:
             - |
               set -e
-              zap-baseline.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -r report.html -w report.md
+              zap-baseline.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -r /zap/wrk/report.html -w /zap/wrk/report.md
               echo "===== BEGIN ZAP REPORT.MD ====="
               cat /zap/wrk/report.md
               echo "===== END ZAP REPORT.MD ====="

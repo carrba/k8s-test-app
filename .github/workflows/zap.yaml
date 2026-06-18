@@ -45,6 +45,8 @@ jobs:
       - name: Extract report.md from logs
         shell: bash
         run: |
+          grep -q '^===== BEGIN ZAP REPORT\.MD =====$' zap-output.txt || { echo "ZAP markdown report start marker not found in zap-output.txt"; tail -n 120 zap-output.txt; exit 1; }
+          grep -q '^===== END ZAP REPORT\.MD =====$' zap-output.txt || { echo "ZAP markdown report end marker not found in zap-output.txt"; tail -n 120 zap-output.txt; exit 1; }
           awk '/^===== BEGIN ZAP REPORT\.MD =====$/ {capture=1; next} /^===== END ZAP REPORT\.MD =====$/ {capture=0; exit} capture {print}' zap-output.txt > report.md
           test -s report.md
 
