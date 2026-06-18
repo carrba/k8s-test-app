@@ -18,7 +18,7 @@ spec:
             runAsUser: 1000
             runAsNonRoot: true
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false
             capabilities:
               drop:
                 - ALL
@@ -29,10 +29,7 @@ spec:
               mkdir -p /zap/wrk/python
               export PIP_TARGET="/zap/wrk/python"
               export PYTHONPATH="/zap/wrk/python:$PYTHONPATH"
-              zap-baseline.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -w /zap/wrk/report.md
-              echo "===== BEGIN ZAP REPORT.MD ====="
-              cat /zap/wrk/report.md
-              echo "===== END ZAP REPORT.MD ====="
+              zap-baseline.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -w report.md && echo "===== BEGIN ZAP REPORT.MD =====" && cat /zap/wrk/report.md && echo "===== END ZAP REPORT.MD ====="
       volumes:
         - name: zap-work
           emptyDir: {}
