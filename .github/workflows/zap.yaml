@@ -62,7 +62,44 @@ jobs:
             report.md
             zap-output.txt
 
-      - name: Parse ZAP alerts
+      - name: Parse summary
+        run: |
+          #!/bin/bash -xe
+          
+          # Read directly from the markdown file.
+          # -m 1 ensures we only grab the first match (which is the summary table at the top of the report)
+          high_value=$(grep -a -m 1 "| High |" report_md.md | awk -F'|' '{print $3}' | xargs)
+          medium_value=$(grep -a -m 1 "| Medium |" report_md.md | awk -F'|' '{print $3}' | xargs)
+          low_value=$(grep -a -m 1 "| Low |" report_md.md | awk -F'|' '{print $3}' | xargs)
+          info_value=$(grep -a -m 1 "| Informational |" report_md.md | awk -F'|' '{print $3}' | xargs)
+          
+          # Fallback to 0 if grep returns empty (e.g., if the ZAP report is totally empty/failed)
+          high_value=${high_value:-0}
+          medium_value=${medium_value:-0}
+          low_value=${low_value:-0}
+          info_value=${info_value:-0}
+
+          echo "ZAP_HIGH=${high_value}" >> "$GITHUB_ENV"
+          echo "ZAP_MEDIUM=${medium_value}" >> "$GITHUB_ENV"
+          echo "ZAP_LOW=${low_value}" >> "$GITHUB_ENV"
+          echo "ZAP_INFO=${info_value}" >> "$GITHUB_ENV"
+
+          if [[ $high_value -gt 0 ]]; then
+              echo "High alerts, notification should be sent"
+              echo "ZAP_SHOULD_NOTIFY=true" >> "$GITHUB_ENV"
+          elif [[ $medium_value -gt 0 || $low_value -gt 0 ]]; then
+              # For daily baseline runs, send summary on Wednesday if there are med/low
+              if [ "$(date +%A)" = "Wednesday" ]; then
+                  echo "Medium and/or low alerts on Wednesday, notification should be sent"
+                  echo "ZAP_SHOULD_NOTIFY=true" >> "$GITHUB_ENV"
+              else
+                  echo "ZAP_SHOULD_NOTIFY=false" >> "$GITHUB_ENV"
+              fi
+          else
+              echo "ZAP_SHOULD_NOTIFY=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Parse ZAP alerts (old)
         id: parse_alerts
         shell: bash
         run: |
