@@ -15,13 +15,15 @@ spec:
             - name: zap-work
               mountPath: /zap/wrk
           command:
-            - zap-baseline.py
+            - /bin/sh
+            - -c
           args:
-            - "-t"
-            - "http://k8s-test-app.k8s-test-app.svc.cluster.local"
-            - "-I"
-            - "-r"
-            - "report.html"
+            - |
+              set -e
+              zap-baseline.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -r report.html -w report.md
+              echo "===== BEGIN ZAP REPORT.MD ====="
+              cat /zap/wrk/report.md
+              echo "===== END ZAP REPORT.MD ====="
       volumes:
         - name: zap-work
           emptyDir: {}
