@@ -99,30 +99,4 @@ jobs:
               echo "ZAP_SHOULD_NOTIFY=false" >> "$GITHUB_ENV"
           fi
 
-      - name: Parse ZAP alerts (old)
-        id: parse_alerts
-        shell: bash
-        run: |
-          FAIL_COUNT=$(grep -oE 'FAIL-NEW: [0-9]+' zap-output.txt | tail -1 | awk '{print $2}')
-          WARN_COUNT=$(grep -oE 'WARN-NEW: [0-9]+' zap-output.txt | tail -1 | awk '{print $2}')
 
-          FAIL_COUNT=${FAIL_COUNT:-0}
-          WARN_COUNT=${WARN_COUNT:-0}
-
-          echo "fail_count=${FAIL_COUNT}" >> "$GITHUB_OUTPUT"
-          echo "warn_count=${WARN_COUNT}" >> "$GITHUB_OUTPUT"
-
-          {
-            echo "# ZAP Scan Alerts"
-            echo
-            echo "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            echo "- Commit: ${{ github.sha }}"
-            echo "- FAIL-NEW: ${FAIL_COUNT}"
-            echo "- WARN-NEW: ${WARN_COUNT}"
-            echo
-            echo "## ZAP Output Excerpt"
-            echo
-            echo '```text'
-            tail -n 120 zap-output.txt
-            echo '```'
-          } > zap-issue.md
