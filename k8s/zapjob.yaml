@@ -15,7 +15,7 @@ spec:
             - name: zap-work
               mountPath: /zap/wrk
             - name: home
-              mountPath: /home
+              mountPath: /home/zap
           securityContext:
             runAsUser: 1000
             runAsNonRoot: true
