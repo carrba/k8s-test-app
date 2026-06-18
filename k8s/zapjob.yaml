@@ -25,10 +25,16 @@ spec:
           command:
             - /bin/sh
             - -c
-            - mkdir /zap/wrk/python
-            - export PIP_TARGET="/zap/wrk/python"
-            - export PYTHONPATH="/zap/wrk/python:$PYTHONPATH"
-            - zap-baseline.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -w report.md && echo "===== BEGIN ZAP REPORT.MD =====" && cat /zap/wrk/report.md && echo "===== END ZAP REPORT.MD ====="
+          args:
+            - |
+              set -e
+              mkdir -p /zap/wrk/python
+              export PIP_TARGET="/zap/wrk/python"
+              export PYTHONPATH="/zap/wrk/python:$PYTHONPATH"
+              zap-baseline.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -r /zap/wrk/report.html -w /zap/wrk/report.md
+              echo "===== BEGIN ZAP REPORT.MD ====="
+              cat /zap/wrk/report.md
+              echo "===== END ZAP REPORT.MD ====="
       volumes:
         - name: zap-work
           emptyDir: {}
