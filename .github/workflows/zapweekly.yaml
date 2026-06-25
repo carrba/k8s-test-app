@@ -32,17 +32,20 @@ jobs:
             sleep 2
           done
 
+          echo "The app did not become healthy on http://127.0.0.1:5000 within 60 seconds."
           docker logs k8s-test-app
           exit 1
 
       - name: Run ZAP weekly scan
         run: |
           mkdir -p "$RUNNER_TEMP/zap-report"
-          chmod 777 "$RUNNER_TEMP/zap-report"
+          mkdir -p "$RUNNER_TEMP/zap-home"
 
           docker run --rm \
+            --user root \
             --network zap-scan \
             -v "$RUNNER_TEMP/zap-report:/zap/wrk:rw" \
+            -v "$RUNNER_TEMP/zap-home:/home/zap:rw" \
             ghcr.io/zaproxy/zaproxy:stable \
             /bin/sh -c 'cd /zap/wrk && zap-full-scan.py -t http://k8s-test-app:5000 -I -w report.md && echo "===== BEGIN ZAP REPORT.MD =====" && cat report.md && echo "===== END ZAP REPORT.MD ====="' | tee zap-output.txt
 
@@ -58,6 +61,7 @@ jobs:
           docker rm -f k8s-test-app || true
           docker network rm zap-scan || true
           rm -rf "$RUNNER_TEMP/zap-report"
+          rm -rf "$RUNNER_TEMP/zap-home"
 
       - name: Print report.md to stdout
         run: |
