@@ -23,7 +23,7 @@ jobs:
       - name: Start scan target
         run: |
           docker network create zap-scan
-          docker run -d --name k8s-test-app --network zap-scan -p 5000:5000 k8s-test-app:zap
+          docker run -d --name zap-test-app --network zap-scan -p 5000:5000 k8s-test-app:zap
 
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:5000/health >/dev/null; then
@@ -33,7 +33,7 @@ jobs:
           done
 
           echo "The app did not become healthy on http://127.0.0.1:5000 within 60 seconds."
-          docker logs k8s-test-app
+          docker logs zap-test-app
           exit 1
 
       - name: Run ZAP baseline scan
@@ -47,7 +47,7 @@ jobs:
             -v "$RUNNER_TEMP/zap-report:/zap/wrk:rw" \
             -v "$RUNNER_TEMP/zap-home:/home/zap:rw" \
             ghcr.io/zaproxy/zaproxy:stable \
-            /bin/sh -c 'cd /zap/wrk && zap-baseline.py -t http://k8s-test-app:5000 -I -w report.md && echo "===== BEGIN ZAP REPORT.MD =====" && cat report.md && echo "===== END ZAP REPORT.MD ====="' | tee zap-output.txt
+            /bin/sh -c 'cd /zap/wrk && zap-baseline.py -t http://zap-test-app:5000 -I -w report.md && echo "===== BEGIN ZAP REPORT.MD =====" && cat report.md && echo "===== END ZAP REPORT.MD ====="' | tee zap-output.txt
 
           cp "$RUNNER_TEMP/zap-report/report.md" report.md
 
@@ -58,10 +58,9 @@ jobs:
       - name: Clean up scan target
         if: always()
         run: |
-          docker rm -f k8s-test-app || true
+          docker rm -f zap-test-app || true
           docker network rm zap-scan || true
-          rm -rf "$RUNNER_TEMP/zap-report"
-          rm -rf "$RUNNER_TEMP/zap-home"
+          docker run --rm --user root -v "$RUNNER_TEMP:/runner-temp" alpine sh -c 'rm -rf /runner-temp/zap-report /runner-temp/zap-home' || true
 
       - name: Print report.md to stdout
         run: |
