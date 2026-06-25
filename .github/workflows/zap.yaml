@@ -22,17 +22,20 @@ jobs:
 
       - name: Start scan target
         run: |
+          health_retries=30
+          health_delay=2
+
           docker network create zap-scan
           docker run -d --name zap-test-app --network zap-scan -p 5000:5000 k8s-test-app:zap
 
-          for i in $(seq 1 30); do
+          for i in $(seq 1 "$health_retries"); do
             if curl -fsS http://127.0.0.1:5000/health >/dev/null; then
               exit 0
             fi
-            sleep 2
+            sleep "$health_delay"
           done
 
-          echo "The app did not become healthy on http://127.0.0.1:5000 within 60 seconds."
+          echo "The app did not become healthy on http://127.0.0.1:5000 within $((health_retries * health_delay)) seconds."
           docker logs zap-test-app
           exit 1
 
