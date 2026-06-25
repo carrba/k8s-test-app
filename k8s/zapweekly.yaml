@@ -12,6 +12,12 @@ spec:
         - name: zap
           image: ghcr.io/zaproxy/zaproxy:stable
           imagePullPolicy: Always
+          workingDir: /zap/wrk
+          env:
+            - name: HOME
+              value: /home/zap
+            - name: TMPDIR
+              value: /tmp
           resources:
             limits:
               cpu: 1000m
@@ -21,6 +27,8 @@ spec:
               mountPath: /zap/wrk
             - name: home
               mountPath: /home/zap
+            - name: tmp
+              mountPath: /tmp
           securityContext:
             runAsUser: 1000
             runAsNonRoot: true
@@ -33,10 +41,12 @@ spec:
             - /bin/sh
             - -c
             - |
-              zap-full-scan.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -w report.md && echo "===== BEGIN ZAP REPORT.MD =====" && cat /zap/wrk/report.md && echo "===== END ZAP REPORT.MD ====="
+              zap-full-scan.py -t http://k8s-test-app.k8s-test-app.svc.cluster.local -I -w /zap/wrk/report.md && echo "===== BEGIN ZAP REPORT.MD =====" && cat /zap/wrk/report.md && echo "===== END ZAP REPORT.MD ====="
       volumes:
         - name: zap-work
           emptyDir: {}
         - name: home
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
       restartPolicy: Never

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: zap-debug
+spec:
+  restartPolicy: Never
+  containers:
+  - name: zap
+    image: ghcr.io/zaproxy/zaproxy:stable
+    command: ["/bin/bash"]
+    stdin: true
+    tty: true
+    volumeMounts:
+    - name: zap-wrk
+      mountPath: /zap/wrk
+  volumes:
+  - name: zap-wrk
+    emptyDir: {}

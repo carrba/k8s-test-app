@@ -11,11 +11,19 @@ spec:
       containers:
         - name: zap
           image: ghcr.io/zaproxy/zaproxy:stable
+          workingDir: /zap/wrk
+          env:
+            - name: HOME
+              value: /home/zap
+            - name: TMPDIR
+              value: /tmp
           volumeMounts:
             - name: zap-work
               mountPath: /zap/wrk
             - name: home
               mountPath: /home/zap
+            - name: tmp
+              mountPath: /tmp
           securityContext:
             runAsUser: 1000
             runAsNonRoot: true
@@ -33,5 +41,7 @@ spec:
         - name: zap-work
           emptyDir: {}
         - name: home
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
       restartPolicy: Never
