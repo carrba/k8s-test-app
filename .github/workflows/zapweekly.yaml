@@ -34,7 +34,7 @@ jobs:
         run: |
           kubectl wait \
             --for=condition=complete \
-            job/zap-scan \
+            job/zap-scan-weekly \
             -n ${{ secrets.KUBE_NAMESPACE }} \
             --timeout=1200s
 
