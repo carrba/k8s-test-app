@@ -16,37 +16,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
 
-      - name: Configure kubectl
+      - name: Build scan target
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CERT }}" | base64 -d > $HOME/.kube/ca.crt
-          kubectl config set-cluster k8s-cluster --server=${{ secrets.KUBE_SERVER }} --certificate-authority=$HOME/.kube/ca.crt
-          kubectl config set-credentials user --token=${{ secrets.KUBE_TOKEN }}
-          kubectl config set-context default --cluster=k8s-cluster --user=user
-          kubectl config use-context default
+          docker build -t k8s-test-app:zap .
 
-      - name: Apply ZAP job
+      - name: Start scan target
         run: |
-          kubectl delete job zap-scan-weekly -n k8s-test-app --ignore-not-found
-          kubectl apply -f k8s/zapweekly.yaml
+          health_retries=30
+          health_delay=2
 
-      - name: Wait for job completion
-        run: |
-          kubectl wait \
-            --for=condition=complete \
-            job/zap-scan \
-            -n ${{ secrets.KUBE_NAMESPACE }} \
-            --timeout=1200s
+          docker network create zap-scan
+          docker run -d --name zap-test-app --network zap-scan -p 5000:5000 k8s-test-app:zap
 
-      - name: Get logs (debugging)
-        run: |
-          kubectl logs job/zap-scan-weekly -n ${{ secrets.KUBE_NAMESPACE }} | tee zap-output.txt
+          for i in $(seq 1 "$health_retries"); do
+            if docker exec zap-test-app python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep "$health_delay"
+          done
 
-      - name: Extract report.md from logs
-        shell: bash
+          echo "The app inside zap-test-app did not become healthy at http://127.0.0.1:5000/health within $((health_retries * health_delay)) seconds."
+          docker logs zap-test-app
+          exit 1
+
+      - name: Run ZAP weekly scan
         run: |
-          awk '/^===== BEGIN ZAP REPORT\.MD =====$/ {capture=1; next} /^===== END ZAP REPORT\.MD =====$/ {capture=0; exit} capture {print}' zap-output.txt > report.md
+          mkdir -p "$RUNNER_TEMP/zap-report"
+          mkdir -p "$RUNNER_TEMP/zap-home"
+
+          docker run --rm \
+            --user root \
+            --network zap-scan \
+            -v "$RUNNER_TEMP/zap-report:/zap/wrk:rw" \
+            -v "$RUNNER_TEMP/zap-home:/home/zap:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            /bin/sh -c 'cd /zap/wrk && zap-full-scan.py -t http://zap-test-app:5000 -I -w report.md && echo "===== BEGIN ZAP REPORT.MD =====" && cat report.md && echo "===== END ZAP REPORT.MD ====="' | tee zap-output.txt
+
+          cp "$RUNNER_TEMP/zap-report/report.md" report.md
+
+      - name: Verify report output
+        run: |
           test -s report.md
+
+      - name: Clean up scan target
+        if: always()
+        run: |
+          docker rm -f zap-test-app || true
+          docker network rm zap-scan || true
+          docker run --rm --user root -v "$RUNNER_TEMP:/runner-temp" alpine sh -c 'rm -rf /runner-temp/zap-report /runner-temp/zap-home' || true
 
       - name: Print report.md to stdout
         run: |
@@ -98,5 +115,3 @@ jobs:
           else
               echo "ZAP_SHOULD_NOTIFY=false" >> "$GITHUB_ENV"
           fi
-
-
