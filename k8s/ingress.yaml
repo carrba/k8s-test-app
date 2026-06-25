@@ -6,17 +6,17 @@ metadata:
   labels:
     app: k8s-test-app
   annotations:
-   nginx.ingress.kubernetes.io/server-snippet: |
-     if ($server_protocol = "HTTP/1.1") {
-       set $http1_reject 1;
-     }
-     if ($uri ~ "^/colour") {
-       set $http1_reject 0;
-     }
-     access_log /dev/stderr combined if=$http1_reject;
-     if ($http1_reject = 1) {
-       return 426;
-     }
+  #  nginx.ingress.kubernetes.io/server-snippet: |
+  #    if ($server_protocol = "HTTP/1.1") {
+  #      set $http1_reject 1;
+  #    }
+  #    if ($uri ~ "^/colour") {
+  #      set $http1_reject 0;
+  #    }
+  #    access_log /dev/stderr combined if=$http1_reject;
+  #    if ($http1_reject = 1) {
+  #      return 426;
+  #    }
 spec:
   ingressClassName: nginx
   tls:
@@ -28,7 +28,7 @@ spec:
     http:
       paths:
       - path: /
-        pathType: Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: k8s-test-app
