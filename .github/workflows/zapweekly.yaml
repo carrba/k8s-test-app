@@ -35,7 +35,7 @@ jobs:
             sleep "$health_delay"
           done
 
-          echo "The app did not become healthy on http://zap-test-app:5000 within $((health_retries * health_delay)) seconds."
+          echo "The app inside zap-test-app did not become healthy at http://127.0.0.1:5000/health within $((health_retries * health_delay)) seconds."
           docker logs zap-test-app
           exit 1
 
